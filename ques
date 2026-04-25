@@ -1,0 +1,97 @@
+## Q1. What is MSIX? What is MSIX App Attach?
+MSIX is a packaging format used to package Windows applications. It contains application files, metadata, dependencies, and configuration required for deployment. All MSIX & Appx packages include a certificate and must be digitally signed before they can be used, ensuring integrity and security.
+MSIX App Attach is a delivery mechanism in Azure Virtual Desktop (AVD) that allows applications to be dynamically attached at runtime from an MSIX package to a user session.
+* Applications are not installed locally on the session host * Applications run inside containers
+* Separates user data, OS, and applications * Reduces operational overhead and cost * Simplifies image management
+---
+## Q2. What are the features of MSIX App Attach?
+* Removes need of repackaging * Uses streaming technology (only changes downloaded during upgrade)
+* Provides application and OS separation * Applications run inside virtual containers (isolation)
+* Supports silent installation * OS remains unmodified * No trace files left after de-staging
+* Reduces login time * Reduces infrastructure cost * Supports running multiple versions of the same application
+* Same package can be reused across multiple host pools
+---
+## Q3. Explain MSIX Package Structure
+MSIX package consists of the following components:
+1. App Payload → Contains application code files and assets
+2. AppxBlockMap.xml → XML file containing list of application files, includes indexes and cryptographic hashes, verified using digital signature
+3. AppxManifest.xml → Contains metadata required for deployment including identity, dependencies, capabilities, properties
+4. AppSignature.p7x → Digital signature file ensuring package authenticity
+5. CodeIntegrity → Ensures validation and integrity of the package
+   Note: All MSIX packages must be signed before deployment
+
+---
+## Q4. What are the requirements to configure MSIX App Attach?
+1. AVD deployment with at least one host pool
+2. Windows 10/11 (single or multi-session)
+3. Network share (Azure Files / Azure NetApp Files) → Recommended: One file share per host pool, Not recommended: One share for multiple host pools
+4. NTFS read permissions and RBAC permissions
+5. MSIX Packaging Tool
+6. msixmgr.exe tool
+7. Certificate (internal or external, must be trusted in environment)
+---
+## Q5. What is the name of the process of taking MSIX package & making it an App Attach package?
+The process is called Expanding MSIX. It converts an MSIX package into a VHD, VHDX, or CIM image so that it can be used with App Attach.
+---
+## Q6. Explain the process of expanding MSIX
+1. Obtain MSIX package 2. Rename .msix file to .zip 3. Extract the contents 4. Create VHD/CIM disk 5. Mount the disk
+6. Initialize the disk 7. Create partition 8. Format the partition 9. Copy extracted files into the disk 10. Use msixmgr.exe to apply ACL permissions
+11. Unmount the disk This process converts the MSIX package into a format usable for App Attach.
+---
+## Q7. What is staging,registering, deregister, de-stage??
+Staging is the process of making the application available to the system. It involves mounting the VHD/CIM to the VM and notifying the OS that the MSIX package is available for registration.
+Registration → Application is registered for a specific user and is required before application can be used. Happens on a per-user basis.
+Deregister → Removes registered application when user signs out and user-specific data is pushed to the user profile.
+De-stage → Removes application from system completely, unmounts VHD/CIM, removes all references from OS, leaves no trace.
+---
+## Q9. What are the types of registration?
+1. Regular Registration (Register at logon) → Application fully registered during login
+2. Delayed Registration (On-demand) → Partially registered at login, fully registered when launched
+---
+## Q10. Which tool is used to expand MSIX package?
+msixmgr.exe
+---
+## Q11. What RBAC/NTFS roles are required for ENTRA ID JOINED scenario?
+Role: Reader & Data Access assigned to AVD and AVD ARM Provider. Used for accessing Azure Files share.
+---
+## Q12. What RBAC/NTFS roles are required for ADDS scenario?
+Role: Storage File Data SMB Share Reader with default share-level permission. Used for accessing Azure Files in hybrid scenario.
+---
+## Q13. Where can we publish MSIX app from?
+Application Group → MSIX Package Application
+---
+## Q14. Where can we configure App Attach from?
+Azure Portal → AVD → App Attach → Create
+---
+## Q15. What is the purpose of "Start VM on connect"?
+Start VM on Connect reduces cost by allowing session host VMs to start only when a user connects. Prevents unnecessary usage and optimizes cost. Requires RBAC role assigned to AVD service principal.
+---
+## Q16. Which host pool type can be configured to use "Start VM on connect"?
+Both Pooled and Personal host pools
+---
+## Q17. Which RBAC role is needed to configure "Start VM on connect"?
+Desktop Virtualization Power On Contributor
+---
+## Q18. Where do we need to configure the RBAC role of Start VM on connect?
+At Subscription level
+---
+## Q19. What is RDP Shortpath?
+RDP Shortpath establishes a UDP-based transport between client and session host. It improves latency and reliability. It starts with TCP reverse connect, switches to UDP if available, otherwise falls back to TCP. Default UDP port is 3390.
+---
+## Q20. How many ways can RDP Shortpath be configured?
+Two ways → Managed Network (private connection like VPN/ExpressRoute) and Public Network (internet-based).
+---
+## Q21. UDP connection between session host & client happens in which scenario?
+Public Network using STUN (direct UDP) or TURN (relayed UDP).
+---
+## Q22. How many ways scaling plan can be configured?
+Ramp Up and Ramp Down
+---
+## Q23. Can we setup multiple schedules in one scaling plan?
+Yes, a scaling plan can have multiple schedules.
+---
+## Q24. What is Dynamic autoscaling?
+Dynamic autoscaling adjusts capacity in a host pool by powering ON/OFF and creating/deleting session hosts based on demand. It uses scaling plan, is only available in Azure, supported for pooled host pools, and cannot be used with Azure Automation or Logic Apps.
+---
+## Q25. Which RBAC role is required for Autoscaling?
+Desktop Virtualization Power On Off Contributor
